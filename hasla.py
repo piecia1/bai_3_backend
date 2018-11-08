@@ -172,7 +172,7 @@ def login():
             cur.prepare(sql)
             cur.execute(sql,bind)
             con.commit() # zatwierdzenie operacji dodania fake_usera
-            return jsonify({'info':field_mask})
+            return jsonify({'info': 'Podaj hasło', 'maska':field_mask})
         else:
             # 1 - patrzymy czy konto nie jest zablokowane
             # pobieramy liczbe prob logowan
@@ -189,7 +189,7 @@ def login():
             last_failed_login=failed_login[2]
             actual_time=datetime.datetime.now() 
             if (failed_attemps_login == 0):
-                return jsonify({'info':failed_login[5]})
+                return jsonify({'info': 'Podaj hasło','maska':failed_login[5]})
             elif (failed_attemps_login == 1):
                 wait_time = last_failed_login + datetime.timedelta(seconds=10)
                 wait_seconds=30
@@ -214,7 +214,7 @@ def login():
                 diffrence_time = wait_time - actual_time
                 return jsonify({'info' : 'Musisz poczekac','time' : diffrence_time.total_seconds()})
             else:
-               return jsonify({'info':failed_login[5]})
+               return jsonify({'info':'Podaj hasło', 'maska':failed_login[5]})
     else:
         # 1 - patrzymy czy konto nie jest zablokowane
         # pobieramy liczbe prob logowan
@@ -231,7 +231,7 @@ def login():
         last_failed_login=user_login[4]
         actual_time=datetime.datetime.now() 
         if(failed_attemps_login == 0):
-            return jsonify({'info':user_login[8]})
+            return jsonify({'info':'Podaj hasło','maska':user_login[8]})
         elif (failed_attemps_login == 1):
             wait_time = last_failed_login + datetime.timedelta(seconds=10)
             wait_seconds=30
@@ -256,7 +256,7 @@ def login():
             diffrence_time = wait_time - actual_time
             return jsonify({'info' : 'Musisz poczekac','time' : diffrence_time.total_seconds()})
         else:
-            return jsonify({'info':user_login[8]})
+            return jsonify({'info':'Podaj hasło','maska':user_login[8]})
 
 
 """ Formularz II 
