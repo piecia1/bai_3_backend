@@ -350,14 +350,21 @@ def checkPassword():
 def changePassword():
     # 1 dodatkowa weryfikacja
 
-    block_after=request.args
-
     # header authorization
     # request.headers.get('your-header-name')
 
 
-    login = request.authorization.username
-    new_password = 'noweHaslo'
+    auth = request.authorization
+    if(not auth):
+        return jsonify({'info':'Nie przeslales danych do zmiany hasla'})
+    login, new_password=auth.username, auth.password
+    # dodana czesc aby nie zapisywac null
+    if((not login) or (not new_password)):
+        return jsonify({'info':'Brak loginu lub hasla'})
+    #sprawdzenie długości hasła
+    if( (len(new_password) < 8) or (len(new_password)> 16) ):
+        return jsonify({'info':'Nieprawidłowa długość hasła'})
+
     salt=str(secrets.randbits(32))
     
     # hashowanie hasła
@@ -417,7 +424,7 @@ def changePassword():
     cur.close()
     con.close()
 
-    return jsonify(user)
+    return jsonify({'info': 'Dokonano zmiany hasła', 'maska': field_mask})
     # 1 Usuwam maski
     # 2 zmieniam haslo
     # 3 generuje nowe maski
