@@ -254,7 +254,7 @@ def checkPassword():
         else:
             return jsonify({'info':user_login[8]})
 
-            """ 
+    
             check_user=checkUser(cur,login,password)
             if(not check_user):
                 # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
@@ -283,4 +283,4 @@ def checkPassword():
                 con.commit()
                 return jsonify({'name':correct_user[1],'last_login':correct_user[3],'last_failed_login':correct_user[4],
                                 'failed_attemps_login':correct_user[5],'block_after':correct_user[6]})
-            """
+            

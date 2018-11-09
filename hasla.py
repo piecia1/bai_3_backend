@@ -318,7 +318,7 @@ def checkPassword():
             fields_masks = cur.fetchall()
             field_mask = random.choice(fields_masks)[0]#nowa maska
             bind = {'name' : login, 'last_mask' : field_mask, 'token' : token}
-            sql = 'UPDATE users4 SET  last_mask=:last_mask, token=:token WHERE name=:name'
+            sql = 'UPDATE users4 SET failed_attemps_login = 0, last_mask=:last_mask, token=:token WHERE name=:name'
             cur.prepare(sql)
             cur.execute(sql, bind)
             con.commit()
@@ -345,42 +345,57 @@ def checkPassword():
 
 """ Formularz III zmiana hasła
 """
-@app.route('/Ps14.php', methods=['GET'])
+@app.route('/Ps14.php', methods=['GET', 'POST'])
 @cross_origin(origin='*')
 def changePassword():
     # 1 dodatkowa weryfikacja
 
-    # header authorization
-    # request.headers.get('your-header-name')
-
-
     auth = request.authorization
     if(not auth):
         return jsonify({'info':'Nie przeslales danych do zmiany hasla'})
-    login, new_password=auth.username, auth.password
-    # dodana czesc aby nie zapisywac null
-    if((not login) or (not new_password)):
-        return jsonify({'info':'Brak loginu lub hasla'})
-    #sprawdzenie długości hasła
-    if( (len(new_password) < 8) or (len(new_password)> 16) ):
-        return jsonify({'info':'Nieprawidłowa długość hasła'})
+    login, old_password=auth.username, auth.password
 
-    salt=str(secrets.randbits(32))
-    
-    # hashowanie hasła
-    db_password = new_password + salt
-    h_password=hashlib.md5(db_password.encode())
-    hash_password=h_password.hexdigest()
+    # Sprawdzenie czy stare hasło i login zostały przesłane
+    if((not login) or (not old_password)):
+        return jsonify({'info':'Brak loginu lub hasla'})
+
+    token = request.headers.get('Authentication')
+    #return jsonify({'name':login, 'old_password':old_password, 'token':token})
+
 
     con = cx_Oracle.connect(database_url)
     cur = con.cursor()
     
     # Pobranie użytkownika
-    bind={'name':login}
-    sql='SELECT * FROM users4 WHERE name =: name'
+    bind={'name':login, 'token':token}
+    sql='SELECT * FROM users4 WHERE name =: name AND token=:token'
     cur.prepare(sql)
     cur.execute(sql, bind)
     user = cur.fetchone()
+    if(not user):
+        return jsonify({'info':'Niepoprawny login lub token'})
+    #Sprawdzam czy stare hasło jest poprawne
+    old_salt = user[7]
+    old_db_password = old_password + old_salt
+    old_h_password=hashlib.md5(old_db_password.encode())
+    old_hash_password=old_h_password.hexdigest()
+
+    if(user[2] != old_hash_password):
+        return jsonify({'info':'Niepoprawne stare hasło'})
+
+    new_salt=str(secrets.randbits(32))
+    data=request.get_json()
+    new_password = data.get('new_password')
+ 
+    #sprawdzenie długości hasła
+    if( (len(new_password) < 8) or (len(new_password)> 16) ):
+        return jsonify({'info':'Nieprawidłowa długość hasła'})
+
+    # hashowanie hasła
+    new_db_password = new_password + new_salt
+    new_h_password=hashlib.md5(new_db_password.encode())
+    new_hash_password=new_h_password.hexdigest()
+
 
     # Usuwam maski
     user_id = user[0]
@@ -390,7 +405,7 @@ def changePassword():
     cur.execute(sql, bind)
     
     # Zmiana hasła
-    bind={'name' : login, 'password' : hash_password, 'salt' : salt, 'last_mask' : None}
+    bind={'name' : login, 'password' : new_hash_password, 'salt' : new_salt, 'last_mask' : None}
     sql='UPDATE users4 SET password=:password, salt=:salt, last_mask=:last_mask WHERE name=:name'
     cur.prepare(sql)
     cur.execute(sql,bind)
@@ -405,7 +420,7 @@ def changePassword():
         for field in random_fields:
             field_password+=new_password[field]     
         field_mask=','.join(map(str,random_fields))
-        field_password+=salt
+        field_password+=new_salt
         h_mask=hashlib.md5(field_password.encode())
         hash_mask=h_mask.hexdigest()
         bind={'user4_id':user_id, 'mask_hash': hash_mask, 'field_mask':field_mask}
@@ -425,10 +440,6 @@ def changePassword():
     con.close()
 
     return jsonify({'info': 'Dokonano zmiany hasła', 'maska': field_mask})
-    # 1 Usuwam maski
-    # 2 zmieniam haslo
-    # 3 generuje nowe maski
-
 
 
 

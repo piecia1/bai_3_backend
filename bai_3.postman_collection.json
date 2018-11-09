@@ -46,33 +46,44 @@
 		},
 		{
 			"id": "4839ed97-9f1e-141f-ea35-be9bda803de8",
-			"headers": "Authorization: Basic dXNlcjE6cGFzc3dvcmQ=\n",
+			"headers": "Authorization: Basic dXNlcjE6cGFzc3dvcmQx\nAuthentication: 3101315747\nContent-Type: application/json\n",
 			"headerData": [
 				{
 					"key": "Authorization",
-					"value": "Basic dXNlcjE6cGFzc3dvcmQ=",
+					"value": "Basic dXNlcjE6cGFzc3dvcmQx",
+					"description": "",
+					"enabled": true
+				},
+				{
+					"key": "Authentication",
+					"value": "3101315747",
+					"description": "",
+					"enabled": true
+				},
+				{
+					"key": "Content-Type",
+					"value": "application/json",
 					"description": "",
 					"enabled": true
 				}
 			],
 			"url": "http://127.0.0.1:5000/Ps14.php",
 			"queryParams": [],
+			"preRequestScript": null,
 			"pathVariables": {},
 			"pathVariableData": [],
-			"preRequestScript": null,
-			"method": "GET",
-			"collectionId": "882a2636-9fc0-cbf7-3321-c8149c43dfaa",
-			"data": null,
-			"dataMode": "params",
-			"name": "http://127.0.0.1:5000/Ps14.php",
-			"description": "",
-			"descriptionFormat": "html",
-			"time": 1541717126976,
-			"version": 2,
-			"responses": [],
+			"method": "POST",
+			"data": [],
+			"dataMode": "raw",
 			"tests": null,
 			"currentHelper": "normal",
-			"helperAttributes": {}
+			"helperAttributes": {},
+			"time": 1541763853553,
+			"name": "http://127.0.0.1:5000/Ps14.php",
+			"description": "",
+			"collectionId": "882a2636-9fc0-cbf7-3321-c8149c43dfaa",
+			"responses": [],
+			"rawModeData": "{\n\t\"new_password\":\"password\"\n}"
 		},
 		{
 			"id": "4a7fa545-4256-1f2c-3298-bd6258e6b1ab",
@@ -110,22 +121,20 @@
 			],
 			"url": "http://127.0.0.1:5000/Ps12.php",
 			"queryParams": [],
+			"preRequestScript": null,
 			"pathVariables": {},
 			"pathVariableData": [],
-			"preRequestScript": null,
 			"method": "GET",
-			"collectionId": "882a2636-9fc0-cbf7-3321-c8149c43dfaa",
 			"data": null,
 			"dataMode": "params",
-			"name": "http://127.0.0.1:5000/Ps12.php",
-			"description": "",
-			"descriptionFormat": "html",
-			"time": 1541717082007,
-			"version": 2,
-			"responses": [],
 			"tests": null,
 			"currentHelper": "normal",
-			"helperAttributes": {}
+			"helperAttributes": {},
+			"time": 1541717711540,
+			"name": "http://127.0.0.1:5000/Ps12.php",
+			"description": "",
+			"collectionId": "882a2636-9fc0-cbf7-3321-c8149c43dfaa",
+			"responses": []
 		}
 	]
 }
