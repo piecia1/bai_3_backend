@@ -63,6 +63,7 @@ def set_allow_origin(resp):
 @app.route('/Ps11.php', methods=['GET'])
 @cross_origin(origin='*')
 def addUser():
+
     # login oraz hasło 
     auth = request.authorization
     if(not auth):
@@ -71,6 +72,13 @@ def addUser():
     login, password = auth.username, auth.password
     if((not login) or  (not password)):
         return jsonify({'info':'Brak loginu lub hasła'})
+    #połączenie z bazą
+    con = cx_Oracle.connect(database_url)
+    cur = con.cursor()
+
+    check_login=checkUserByLogin(cur,login)
+    if(check_login):
+        return jsonify({'info':'Użytkownik istnieje już w bazie danych'})
     #sprawdzenie długości hasła
     if( (len(password) < 8) or (len(password)> 16) ):
         return jsonify({'info':'Nieprawidłowa długość hasła'})
