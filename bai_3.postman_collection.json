@@ -6,7 +6,8 @@
 		"459cd716-c047-8a20-85aa-966f96101602",
 		"de4f8439-e393-942c-790c-636bdc9638b3",
 		"4a7fa545-4256-1f2c-3298-bd6258e6b1ab",
-		"4839ed97-9f1e-141f-ea35-be9bda803de8"
+		"4839ed97-9f1e-141f-ea35-be9bda803de8",
+		"d81e1d77-fd40-3153-2cde-e2017c5e1f2d"
 	],
 	"folders": [],
 	"folders_order": [],
@@ -16,33 +17,31 @@
 	"requests": [
 		{
 			"id": "459cd716-c047-8a20-85aa-966f96101602",
-			"headers": "Authorization: Basic dXNlcjE6aGFzbG8xMjM=\n",
+			"headers": "Authorization: Basic dXNlcjI6cGFzc3dvcmQ=\n",
 			"headerData": [
 				{
 					"key": "Authorization",
-					"value": "Basic dXNlcjE6aGFzbG8xMjM=",
+					"value": "Basic dXNlcjI6cGFzc3dvcmQ=",
 					"description": "",
 					"enabled": true
 				}
 			],
 			"url": "http://127.0.0.1:5000/Ps11.php",
 			"queryParams": [],
+			"preRequestScript": null,
 			"pathVariables": {},
 			"pathVariableData": [],
-			"preRequestScript": null,
 			"method": "GET",
-			"collectionId": "882a2636-9fc0-cbf7-3321-c8149c43dfaa",
 			"data": null,
 			"dataMode": "params",
-			"name": "http://127.0.0.1:5000/Ps11.php",
-			"description": "Dodawnie użytkowników\n",
-			"descriptionFormat": "html",
-			"time": 1541716660701,
-			"version": 2,
-			"responses": [],
 			"tests": null,
 			"currentHelper": "normal",
-			"helperAttributes": {}
+			"helperAttributes": {},
+			"time": 1542096910371,
+			"name": "http://127.0.0.1:5000/Ps11.php",
+			"description": "Dodawnie użytkowników\n",
+			"collectionId": "882a2636-9fc0-cbf7-3321-c8149c43dfaa",
+			"responses": []
 		},
 		{
 			"id": "4839ed97-9f1e-141f-ea35-be9bda803de8",
@@ -102,6 +101,50 @@
 			"description": "",
 			"descriptionFormat": "html",
 			"time": 1541717117966,
+			"version": 2,
+			"responses": [],
+			"tests": null,
+			"currentHelper": "normal",
+			"helperAttributes": {}
+		},
+		{
+			"id": "d81e1d77-fd40-3153-2cde-e2017c5e1f2d",
+			"headers": "Authentication: 1428594996\nAuthorization: Basic dXNlcjE6cGFzc3dvcmQ=\n",
+			"headerData": [
+				{
+					"key": "Authentication",
+					"value": "1428594996",
+					"description": "",
+					"enabled": true
+				},
+				{
+					"key": "Authorization",
+					"value": "Basic dXNlcjE6cGFzc3dvcmQ=",
+					"description": "",
+					"enabled": true
+				}
+			],
+			"url": "http://127.0.0.1:5000/Ps15.php?par=5",
+			"queryParams": [
+				{
+					"key": "par",
+					"value": "5",
+					"equals": true,
+					"description": "",
+					"enabled": true
+				}
+			],
+			"pathVariables": {},
+			"pathVariableData": [],
+			"preRequestScript": null,
+			"method": "GET",
+			"collectionId": "882a2636-9fc0-cbf7-3321-c8149c43dfaa",
+			"data": null,
+			"dataMode": "params",
+			"name": "http://127.0.0.1:5000/Ps15.php?par=5",
+			"description": "",
+			"descriptionFormat": "html",
+			"time": 1542488208250,
 			"version": 2,
 			"responses": [],
 			"tests": null,

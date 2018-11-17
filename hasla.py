@@ -291,54 +291,50 @@ def checkPassword():
         actual_time = datetime.datetime.now() 
         failed_attemps_login = fake_user[3]
         block_after = fake_user[4]
-        # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
-        bind={'name' : login, 'last_failed_login' : actual_time}
-        sql='UPDATE fake_users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
-        cur.prepare(sql)
-        cur.execute(sql,bind)
-        con.commit()
-        failed_attemps_login=failed_attemps_login+1
-        # 3 - sprawdzamy czy nie była to ostatnia próba logowania
+        # 1 - patrzymy czy konto nie jest zablokowane
+        # pobieramy liczbe prob logowan
+        # oraz liczbe nieudanych logowan po ktorych nastepuje blokada konta
         if(failed_attemps_login>=block_after):
-            return jsonify({'info':'Twoje konto zostało zablokowane'})
-        else:
-            #'time':wait_seconds
-            return jsonify({'info':'Niepoprawny login lub hasło',})
-
-    else:
-        # Pobieramy mask_hash z tabeli mask
-        bind={'user4_id':user[0], 'field_mask': user[8]}
-        sql='SELECT mask_hash FROM mask WHERE user4_id=:user4_id AND field_mask=:field_mask'
-        cur.prepare(sql)
-        cur.execute(sql, bind)
-        mask_hash = cur.fetchone()[0]
-        # Hashujemy przesłane hasło
-        field_password= password+user[7]
-        h_filed_password=hashlib.md5(field_password.encode())
-        hash_field_password=h_filed_password.hexdigest()
-        # Poprawne Haslo cząstkowe
-        if(mask_hash==hash_field_password):
-            token=secrets.randbits(32)
-            bind = {'user4_id' : user[0]}
-            sql = 'SELECT field_mask FROM mask WHERE user4_id=:user4_id'
+            return jsonify({'info':'Twoje konto jest zablokowane'})
+        # 2 sprawdzamy czy uzytkownik moze wykonac kolejna probe logowania
+        last_failed_login=fake_user[2]
+        actual_time=datetime.datetime.now() 
+        if (failed_attemps_login == 0):
+            # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
+            # Nie ma ograniczenia czasowego
+            bind={'name' : login, 'last_failed_login' : actual_time}
+            sql='UPDATE fake_users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
             cur.prepare(sql)
-            cur.execute(sql, bind)
-            fields_masks = cur.fetchall()
-            field_mask = random.choice(fields_masks)[0]#nowa maska
-            bind = {'name' : login, 'last_mask' : field_mask, 'token' : token}
-            sql = 'UPDATE users4 SET failed_attemps_login = 0, last_mask=:last_mask, token=:token WHERE name=:name'
-            cur.prepare(sql)
-            cur.execute(sql, bind)
+            cur.execute(sql,bind)
             con.commit()
-            return jsonify({'info':'Jesteś zalogownany', 'token': token})
-        # Niepoprawne hasło cząstkowe
+            return jsonify({'info':'Niepoprawny login lub hasło',})
+        elif (failed_attemps_login == 1):
+            wait_time = last_failed_login + datetime.timedelta(seconds=10)
+            wait_seconds=30
+        elif(failed_attemps_login == 2):
+            wait_time = last_failed_login + datetime.timedelta(seconds = 30)
+            wait_seconds=60
+        elif(failed_attemps_login==3):
+            wait_time=last_failed_login+datetime.timedelta(minutes=1)
+            wait_seconds=300
+        elif(failed_attemps_login==4):
+            wait_time=last_failed_login+datetime.timedelta(minutes=5)
+            wait_seconds=1800
+        elif(failed_attemps_login==5):
+            wait_time=last_failed_login+datetime.timedelta(minutes=30)
+            wait_seconds=3600
+        elif(failed_attemps_login==6):
+            wait_time=last_failed_login+datetime.timedelta(hours=1)
+            wait_seconds=10000 #nie uzywane
         else:
-            actual_time = datetime.datetime.now() 
-            failed_attemps_login = user[5]
-            block_after = user[6]
+            return jsonify({'info':'Twoje konto jest zablokowane'})
+        if(wait_time > actual_time):
+            diffrence_time = wait_time - actual_time
+            return jsonify({'info' : 'Musisz poczekac','time' : diffrence_time.total_seconds()})
+        else:
             # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
             bind={'name' : login, 'last_failed_login' : actual_time}
-            sql='UPDATE users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
+            sql='UPDATE fake_users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
             cur.prepare(sql)
             cur.execute(sql,bind)
             con.commit()
@@ -347,7 +343,125 @@ def checkPassword():
             if(failed_attemps_login>=block_after):
                 return jsonify({'info':'Twoje konto zostało zablokowane'})
             else:
+                return jsonify({'info':'Niepoprawny login lub hasło',})
+    #Jest to użytkownik zarejestrowany
+    else:
+        failed_attemps_login = user[5]
+        block_after = user[6]
+        # 1 - patrzymy czy konto nie jest zablokowane
+        if(failed_attemps_login>=block_after):
+            return jsonify({'info':'Twoje konto jest zablokowane'})
+        # 2 sprawdzamy czy uzytkownik moze wykonac kolejna probe logowania
+        last_failed_login=user[4]
+        actual_time=datetime.datetime.now() 
+        if(failed_attemps_login == 0):
+            #Następuje próba logowania
+            # Pobieramy mask_hash z tabeli mask
+            bind={'user4_id':user[0], 'field_mask': user[8]}
+            sql='SELECT mask_hash FROM mask WHERE user4_id=:user4_id AND field_mask=:field_mask'
+            cur.prepare(sql)
+            cur.execute(sql, bind)
+            mask_hash = cur.fetchone()[0]
+            # Hashujemy przesłane hasło
+            field_password= password+user[7]
+            h_filed_password=hashlib.md5(field_password.encode())
+            hash_field_password=h_filed_password.hexdigest()
+            # Poprawne Haslo cząstkowe
+            if(mask_hash==hash_field_password):
+                token=secrets.randbits(32)
+                bind = {'user4_id' : user[0]}
+                sql = 'SELECT field_mask FROM mask WHERE user4_id=:user4_id'
+                cur.prepare(sql)
+                cur.execute(sql, bind)
+                fields_masks = cur.fetchall()
+                field_mask = random.choice(fields_masks)[0]#nowa maska
+                bind = {'name' : login, 'last_mask' : field_mask, 'last_login':actual_time,'token' : token}
+                sql = 'UPDATE users4 SET failed_attemps_login = 0, last_mask=:last_mask, last_login=:last_login, token=:token WHERE name=:name'
+                cur.prepare(sql)
+                cur.execute(sql, bind)
+                con.commit()
+                return jsonify({'name':user[1],'last_login':user[3],'last_failed_login':user[4],
+                                'failed_attemps_login':user[5],'block_after':user[6], 'token' : token})
+                #return jsonify({'info':'Jesteś zalogownany', 'token': token})
+            # Niepoprawne hasło cząstkowe
+            else:
+                actual_time = datetime.datetime.now() 
+                failed_attemps_login = user[5]
+                block_after = user[6]
+                # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
+                bind={'name' : login, 'last_failed_login' : actual_time}
+                sql='UPDATE users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
+                cur.prepare(sql)
+                cur.execute(sql,bind)
+                con.commit()
                 return jsonify({'info':'Niepoprawne hasło',})
+        elif (failed_attemps_login == 1):
+            wait_time = last_failed_login + datetime.timedelta(seconds=10)
+            wait_seconds=30
+        elif(failed_attemps_login == 2):
+            wait_time = last_failed_login + datetime.timedelta(seconds = 30)
+            wait_seconds=60
+        elif(failed_attemps_login==3):
+            wait_time=last_failed_login+datetime.timedelta(minutes=1)
+            wait_seconds=300
+        elif(failed_attemps_login==4):
+            wait_time=last_failed_login+datetime.timedelta(minutes=5)
+            wait_seconds=1800
+        elif(failed_attemps_login==5):
+            wait_time=last_failed_login+datetime.timedelta(minutes=30)
+            wait_seconds=3600
+        elif(failed_attemps_login==6):
+            wait_time=last_failed_login+datetime.timedelta(hours=1)
+            wait_seconds=10000 #nie uzywane
+        else:
+            return jsonify({'info':'Twoje konto jest zablokowane'})
+        if(wait_time > actual_time):
+            diffrence_time = wait_time - actual_time
+            return jsonify({'info' : 'Musisz poczekac','time' : diffrence_time.total_seconds()})
+        else:
+            # Pobieramy mask_hash z tabeli mask
+            bind={'user4_id':user[0], 'field_mask': user[8]}
+            sql='SELECT mask_hash FROM mask WHERE user4_id=:user4_id AND field_mask=:field_mask'
+            cur.prepare(sql)
+            cur.execute(sql, bind)
+            mask_hash = cur.fetchone()[0]
+            # Hashujemy przesłane hasło
+            field_password= password+user[7]
+            h_filed_password=hashlib.md5(field_password.encode())
+            hash_field_password=h_filed_password.hexdigest()
+            # Poprawne Haslo cząstkowe
+            if(mask_hash==hash_field_password):
+                token=secrets.randbits(32)
+                bind = {'user4_id' : user[0]}
+                sql = 'SELECT field_mask FROM mask WHERE user4_id=:user4_id'
+                cur.prepare(sql)
+                cur.execute(sql, bind)
+                fields_masks = cur.fetchall()
+                field_mask = random.choice(fields_masks)[0]#nowa maska
+                bind = {'name' : login, 'last_mask' : field_mask, 'last_login':actual_time,'token' : token}
+                sql = 'UPDATE users4 SET failed_attemps_login = 0, last_mask=:last_mask, last_login=:last_login, token=:token WHERE name=:name'
+                cur.prepare(sql)
+                cur.execute(sql, bind)
+                con.commit()
+                return jsonify({'name':user[1],'last_login':user[3],'last_failed_login':user[4],
+                                'failed_attemps_login':user[5],'block_after':user[6], 'token' : token})
+            # Niepoprawne hasło cząstkowe
+            else:
+                actual_time = datetime.datetime.now() 
+                failed_attemps_login = user[5]
+                block_after = user[6]
+                # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
+                bind={'name' : login, 'last_failed_login' : actual_time}
+                sql='UPDATE users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
+                cur.prepare(sql)
+                cur.execute(sql,bind)
+                con.commit()
+                failed_attemps_login=failed_attemps_login+1
+                # 3 - sprawdzamy czy nie była to ostatnia próba logowania
+                if(failed_attemps_login>=block_after):
+                    return jsonify({'info':'Twoje konto zostało zablokowane'})
+                else:
+                    return jsonify({'info':'Niepoprawne hasło',})
     return jsonify({'info': 'Nieznany błąd'})
 
 
@@ -367,7 +481,14 @@ def changePassword():
     if((not login) or (not old_password)):
         return jsonify({'info':'Brak loginu lub hasla'})
 
-    token = request.headers.get('Authentication')
+    # Tutaj popraw 
+    try:
+        token = int(request.headers.get('Authentication'))
+    except ValueError:
+        return jsonify({'info' : 'Niepoprawny typ danych Authentication'})
+    #print(type(token))
+    #if (type(token) != type(int())):
+    #    return jsonify({'info' : 'Niepoprawny typ danych Authentication'})
     #return jsonify({'name':login, 'old_password':old_password, 'token':token})
 
 
@@ -446,10 +567,68 @@ def changePassword():
     con.commit()
     cur.close()
     con.close()
+    return jsonify({'name':user[1],'last_login':user[3],'last_failed_login':user[4],
+                    'failed_attemps_login':user[5],'block_after':user[6], 'token' : user[9]})
 
-    return jsonify({'info': 'Dokonano zmiany hasła', 'maska': field_mask})
+"""Formularz IV
+Zmiana parametru block_after
+"""
+@app.route('/Ps15.php', methods=['GET'])
+@cross_origin(origin='*')
+def changeOption():
+    # 1 dodatkowa weryfikacja
 
+    auth = request.authorization
+    if(not auth):
+        return jsonify({'info':'Nie przeslales danych do zmiany parametru block_after'})
+    login =auth.username
 
+    # Sprawdzenie czy stare hasło i login zostały przesłane
+    if(not login):
+        return jsonify({'info':'Brak loginu lub hasla'})
+
+    # Tutaj popraw 
+    try:
+        token = int(request.headers.get('Authentication'))
+    except ValueError:
+        return jsonify({'info' : 'Niepoprawny typ danych Authentication'})
+
+    con = cx_Oracle.connect(database_url)
+    cur = con.cursor()
+    
+    # Pobranie użytkownika
+    bind={'name':login, 'token':token}
+    sql='SELECT * FROM users4 WHERE name =: name AND token=:token'
+    cur.prepare(sql)
+    cur.execute(sql, bind)
+    user = cur.fetchone()
+    if(not user):
+        return jsonify({'info':'Niepoprawny login lub token'})
+    else:     
+        # dodana czesc gdy nie podano parametru
+        block_after=request.args.get('par')
+        if(not block_after):
+            return jsonify({'info':'Brak parametru'})
+        else:
+            try:
+                block_after=int(block_after)
+            except ValueError:
+                return jsonify({'info' : 'Niepoprawny typ danych par'})
+            if(block_after < 3 or block_after > 7):
+                return jsonify({'info' : 'Nieprawidłowy zakres'})
+            else:
+                bind ={'name' : login, 'block_after' : block_after}
+                sql = 'UPDATE users4 SET block_after =: block_after WHERE name =: name'
+                cur.prepare(sql)
+                cur.execute(sql,bind)
+                con.commit()
+                bind={'name':login}
+                sql='SELECT * FROM users4 WHERE name =: name'
+                cur.prepare(sql)
+                cur.execute(sql,bind)
+                correct_user=cur.fetchone()
+                return jsonify({'name':correct_user[1],'last_login':correct_user[3],'last_failed_login':correct_user[4],
+                                'failed_attemps_login':correct_user[5],'block_after':correct_user[6],'token':correct_user[9]})
 
 def checkUserByLogin4(cur,login):
     bind = {'login': login}
@@ -497,7 +676,7 @@ def checkFakeUserByLogin(cur,login):
 
 def checkUser(cur,login,password):
     bind = {'login': login,'password_check':password}
-    sql = 'select * from users2 where name = :login AND password=:password_check'
+    sql = 'select * from users4 where name = :login AND password=:password_check'
     cur.prepare(sql)
     cur.execute(sql, bind)
     logged_user = cur.fetchone() 
@@ -505,11 +684,3 @@ def checkUser(cur,login,password):
         return True
     else:
         return False 
-"""
-Pytania do tomka 
-1 - Przechodzenie między formularzami - dodatkowe zabezpieczenia
-2 - Sposób przesyłania hasła i loginu
-3 - Token zamiast hasła - sposób przesyłania
-4 - dodatkowa weryfikacja
-5 - Co mam kiedy zwracać
-"""
