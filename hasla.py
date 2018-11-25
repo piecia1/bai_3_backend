@@ -277,10 +277,14 @@ def checkPassword():
     auth = request.authorization
     if(not auth):
         return jsonify({'info':'Nie przeslales danych do logowania'})
-    login,password=auth.username, auth.password
+    login = auth.username
     # dodana czesc aby nie zapisywac null
-    if((not login) or (not password)):
-        return jsonify({'info':'Brak loginu lub hasla'})
+    if(not login):
+        return jsonify({'info':'Brak loginu'})
+    # sprawdzenie hasłą cząstkowego
+    password_dict=request.args
+    if(not password_dict):
+        return jsonify({'info':'Brak hasła cząstkowego'})
     
     con = cx_Oracle.connect(database_url)
     cur = con.cursor()
@@ -288,6 +292,8 @@ def checkPassword():
     #Jeżeli nie jest to użytkownik zarejstrowany więc musi to być fejkowy użytkownik (fake_user)
     if (not user):
         fake_user=checkFakeUserByLogin4(cur,login)
+        if (not fake_user):
+            return jsonify({'info':'Niepoprawny login'})
         actual_time = datetime.datetime.now() 
         failed_attemps_login = fake_user[3]
         block_after = fake_user[4]
@@ -307,6 +313,20 @@ def checkPassword():
             cur.prepare(sql)
             cur.execute(sql,bind)
             con.commit()
+            #Sprawdzenie hasła cząstkowego
+            maska = fake_user[5].split(',')
+            password=''
+            password_keys=list(password_dict.keys())
+            if(len(password_keys) != len(maska)):
+                return jsonify({'info':'Niepoprawna długość hasła'})
+            elif(password_keys != maska):
+                return jsonify({'info' : 'Hasło nieodpowiadające masce'})
+            else:
+                for value in password_dict.values():
+                    if(len(value) > 1):
+                        return jsonify({'info' : 'Więcej niż jeden znak na pojedynczym miejscu hasła'})
+                    else:
+                        password += value
             return jsonify({'info':'Niepoprawny login lub hasło',})
         elif (failed_attemps_login == 1):
             wait_time = last_failed_login + datetime.timedelta(seconds=10)
@@ -343,6 +363,18 @@ def checkPassword():
             if(failed_attemps_login>=block_after):
                 return jsonify({'info':'Twoje konto zostało zablokowane'})
             else:
+                #Sprawdzenie hasła cząstkowego
+                maska = fake_user[5].split(',')
+                password_keys=list(password_dict.keys())
+                if(len(password_keys) != len(maska)):
+                    return jsonify({'info':'Niepoprawna długość hasła'})
+                elif(password_keys != maska):
+                    return jsonify({'info' : 'Hasło nieodpowiadające masce'})
+                else:
+                    for value in password_dict.values():
+                        if(len(value) > 1):
+                            return jsonify({'info' : 'Więcej niż jeden znak na pojedynczym miejscu hasła'})
+                
                 return jsonify({'info':'Niepoprawny login lub hasło',})
     #Jest to użytkownik zarejestrowany
     else:
@@ -354,7 +386,33 @@ def checkPassword():
         # 2 sprawdzamy czy uzytkownik moze wykonac kolejna probe logowania
         last_failed_login=user[4]
         actual_time=datetime.datetime.now() 
+        
         if(failed_attemps_login == 0):
+            password=''
+            maska = user[8].split(',')
+            password_keys=list(password_dict.keys())
+            if(len(password_keys) != len(maska)):
+                updateFailedAttemps(cur,user)
+                con.commit()
+                cur.close()
+                con.close()
+                return jsonify({'info':'Niepoprawne długość hasła'})
+            elif(password_keys != maska):
+                updateFailedAttemps(cur,user)
+                con.commit()
+                cur.close()
+                con.close()
+                return jsonify({'info' : 'Hasło nieodpowiadające masce'})
+            else:
+                for value in password_dict.values():
+                    if(len(value) > 1):
+                        updateFailedAttemps(cur,user)
+                        con.commit()
+                        cur.close()
+                        con.close()
+                        return jsonify({'info' : 'Więcej niż jeden znak na pojedynczym miejscu hasła'})
+                    else:
+                        password += value
             #Następuje próba logowania
             # Pobieramy mask_hash z tabeli mask
             bind={'user4_id':user[0], 'field_mask': user[8]}
@@ -385,15 +443,10 @@ def checkPassword():
                 #return jsonify({'info':'Jesteś zalogownany', 'token': token})
             # Niepoprawne hasło cząstkowe
             else:
-                actual_time = datetime.datetime.now() 
-                failed_attemps_login = user[5]
-                block_after = user[6]
-                # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
-                bind={'name' : login, 'last_failed_login' : actual_time}
-                sql='UPDATE users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
-                cur.prepare(sql)
-                cur.execute(sql,bind)
+                updateFailedAttemps(cur,user)
                 con.commit()
+                cur.close()
+                con.close()
                 return jsonify({'info':'Niepoprawne hasło',})
         elif (failed_attemps_login == 1):
             wait_time = last_failed_login + datetime.timedelta(seconds=10)
@@ -419,6 +472,31 @@ def checkPassword():
             diffrence_time = wait_time - actual_time
             return jsonify({'info' : 'Musisz poczekac','time' : diffrence_time.total_seconds()})
         else:
+            password=''
+            maska = user[8].split(',')
+            password_keys=list(password_dict.keys())
+            if(len(password_keys) != len(maska)):
+                updateFailedAttemps(cur,user)
+                con.commit()
+                cur.close()
+                con.close()
+                return jsonify({'info':'Niepoprawne długość hasła'})
+            elif(password_keys != maska):
+                updateFailedAttemps(cur,user)
+                con.commit()
+                cur.close()
+                con.close()
+                return jsonify({'info' : 'Hasło nieodpowiadające masce'})
+            else:
+                for value in password_dict.values():
+                    if(len(value) > 1):
+                        updateFailedAttemps(cur,user)
+                        con.commit()
+                        cur.close()
+                        con.close()
+                        return jsonify({'info' : 'Więcej niż jeden znak na pojedynczym miejscu hasła'})
+                    else:
+                        password += value
             # Pobieramy mask_hash z tabeli mask
             bind={'user4_id':user[0], 'field_mask': user[8]}
             sql='SELECT mask_hash FROM mask WHERE user4_id=:user4_id AND field_mask=:field_mask'
@@ -447,15 +525,10 @@ def checkPassword():
                                 'failed_attemps_login':user[5],'block_after':user[6], 'token' : token})
             # Niepoprawne hasło cząstkowe
             else:
-                actual_time = datetime.datetime.now() 
-                failed_attemps_login = user[5]
-                block_after = user[6]
-                # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
-                bind={'name' : login, 'last_failed_login' : actual_time}
-                sql='UPDATE users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
-                cur.prepare(sql)
-                cur.execute(sql,bind)
+                updateFailedAttemps(cur,user)
                 con.commit()
+                cur.close()
+                con.close()
                 failed_attemps_login=failed_attemps_login+1
                 # 3 - sprawdzamy czy nie była to ostatnia próba logowania
                 if(failed_attemps_login>=block_after):
@@ -684,3 +757,29 @@ def checkUser(cur,login,password):
         return True
     else:
         return False 
+
+def updateFailedAttemps(cur,user):
+    actual_time = datetime.datetime.now() 
+    failed_attemps_login = user[5]
+    block_after = user[6]
+    # 3 - zwiekszamy liczbe prob logowan o 1 (failed_attemps_login)
+    bind={'name' : user[1], 'last_failed_login' : actual_time}
+    sql='UPDATE users4 SET failed_attemps_login = failed_attemps_login + 1, last_failed_login=:last_failed_login WHERE name=:name'
+    cur.prepare(sql)
+    cur.execute(sql,bind)
+
+def checkParPassword(maska, password_dict):
+    password=''
+    password_keys=list(password_dict.keys())
+    print(list(password_dict.values()))
+    if(len(password_keys) != len(maska)):
+        return jsonify({'info':'Niepoprawne długość hasła'})
+    elif(password_keys != maska):
+        return jsonify({'info' : 'Hasło nieodpowiadające masce'})
+    else:
+        for value in password_dict.values():
+            if(len(value) > 1):
+                return jsonify({'info' : 'Więcej niż jeden znak na pojedynczym miejscu hasła'})
+            else:
+                password += value
+        return jsonify(password)
